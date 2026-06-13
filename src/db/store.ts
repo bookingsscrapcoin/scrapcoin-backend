@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Booking, ScrapCategory } from "../types.js";
+import type { Booking, BookingStatus, ScrapCategory } from "../types.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -9,18 +9,61 @@ const supabase = createClient(
 // ── Categories ──────────────────────────────────────────
 
 export async function getCategories(): Promise<ScrapCategory[]> {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*");
-
+  const { data, error } = await supabase.from("categories").select("*");
   if (error) throw new Error(error.message);
-
   return data.map((r) => ({
     id: r.id,
     name: r.name,
     unit: r.unit as "kg",
     pricePerUnit: Number(r.price_per_unit),
   }));
+}
+
+export async function createCategory(input: {
+  id: string;
+  name: string;
+  unit: string;
+  price_per_unit: number;
+}): Promise<ScrapCategory> {
+  const { data, error } = await supabase
+    .from("categories")
+    .insert(input)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return {
+    id: data.id,
+    name: data.name,
+    unit: data.unit as "kg",
+    pricePerUnit: Number(data.price_per_unit),
+  };
+}
+
+export async function updateCategory(
+  id: string,
+  input: { name?: string; unit?: string; price_per_unit?: number }
+): Promise<ScrapCategory | undefined> {
+  const { data, error } = await supabase
+    .from("categories")
+    .update(input)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) {
+    if (error.code === "PGRST116") return undefined;
+    throw new Error(error.message);
+  }
+  return {
+    id: data.id,
+    name: data.name,
+    unit: data.unit as "kg",
+    pricePerUnit: Number(data.price_per_unit),
+  };
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 // ── Bookings ─────────────────────────────────────────────
@@ -30,7 +73,6 @@ export async function getBookings(): Promise<Booking[]> {
     .from("bookings")
     .select("*")
     .order("created_at", { ascending: false });
-
   if (error) throw new Error(error.message);
   return data.map(rowToBooking);
 }
@@ -48,7 +90,6 @@ export async function saveBooking(booking: Booking): Promise<Booking> {
     created_at: booking.createdAt,
     updated_at: booking.updatedAt,
   });
-
   if (error) throw new Error(error.message);
   return booking;
 }
@@ -59,12 +100,27 @@ export async function getBookingById(id: string): Promise<Booking | undefined> {
     .select("*")
     .eq("id", id)
     .single();
-
   if (error) {
-    if (error.code === "PGRST116") return undefined; // not found
+    if (error.code === "PGRST116") return undefined;
     throw new Error(error.message);
   }
+  return rowToBooking(data);
+}
 
+export async function updateBookingStatus(
+  id: string,
+  status: BookingStatus
+): Promise<Booking | undefined> {
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) {
+    if (error.code === "PGRST116") return undefined;
+    throw new Error(error.message);
+  }
   return rowToBooking(data);
 }
 
