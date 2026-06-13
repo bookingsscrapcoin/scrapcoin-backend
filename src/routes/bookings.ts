@@ -24,7 +24,7 @@ const statusSchema = z.object({
 
 export const bookingsRouter = Router();
 
-// GET /api/bookings — list all bookings (admin only)
+// GET /api/bookings ï¿½ list all bookings (admin only)
 bookingsRouter.get("/", requireAdmin, async (_req, res) => {
   try {
     const bookings = await getBookings();
@@ -34,7 +34,7 @@ bookingsRouter.get("/", requireAdmin, async (_req, res) => {
   }
 });
 
-// POST /api/bookings — create a new booking (public)
+// POST /api/bookings ï¿½ create a new booking (public)
 bookingsRouter.post("/", async (req, res) => {
   const parsed = bookingSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -61,10 +61,10 @@ bookingsRouter.post("/", async (req, res) => {
   }
 });
 
-// GET /api/bookings/:id — get single booking (admin only)
+// GET /api/bookings/:id â€” get single booking (admin only)
 bookingsRouter.get("/:id", requireAdmin, async (req, res) => {
   try {
-    const booking = await getBookingById(req.params.id);
+    const booking = await getBookingById(String(req.params.id));
     if (!booking) return res.status(404).json({ error: "Booking not found" });
     return res.json(booking);
   } catch {
@@ -72,7 +72,7 @@ bookingsRouter.get("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// PATCH /api/bookings/:id — update booking status (admin only)
+// PATCH /api/bookings/:id â€” update booking status (admin only)
 bookingsRouter.patch("/:id", requireAdmin, async (req, res) => {
   const parsed = statusSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -83,7 +83,7 @@ bookingsRouter.patch("/:id", requireAdmin, async (req, res) => {
   }
   try {
     const booking = await updateBookingStatus(
-      req.params.id,
+      String(req.params.id),
       parsed.data.status
     );
     if (!booking) return res.status(404).json({ error: "Booking not found" });

@@ -23,7 +23,7 @@ const updateCategorySchema = z.object({
 
 export const categoriesRouter = Router();
 
-// GET /api/scrap-categories — public
+// GET /api/scrap-categories ï¿½ public
 categoriesRouter.get("/", async (_req, res) => {
   try {
     const categories = await getCategories();
@@ -33,7 +33,7 @@ categoriesRouter.get("/", async (_req, res) => {
   }
 });
 
-// POST /api/scrap-categories — admin only
+// POST /api/scrap-categories ï¿½ admin only
 categoriesRouter.post("/", requireAdmin, async (req, res) => {
   const parsed = categorySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -50,7 +50,7 @@ categoriesRouter.post("/", requireAdmin, async (req, res) => {
   }
 });
 
-// PATCH /api/scrap-categories/:id — admin only
+// PATCH /api/scrap-categories/:id ï¿½ admin only
 categoriesRouter.patch("/:id", requireAdmin, async (req, res) => {
   const parsed = updateCategorySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -60,7 +60,7 @@ categoriesRouter.patch("/:id", requireAdmin, async (req, res) => {
     });
   }
   try {
-    const category = await updateCategory(req.params.id, parsed.data);
+    const category = await updateCategory(String(req.params.id), parsed.data);
     if (!category) return res.status(404).json({ error: "Category not found" });
     return res.json(category);
   } catch {
@@ -68,10 +68,10 @@ categoriesRouter.patch("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/scrap-categories/:id — admin only
+// DELETE /api/scrap-categories/:id ï¿½ admin only
 categoriesRouter.delete("/:id", requireAdmin, async (req, res) => {
   try {
-    await deleteCategory(req.params.id);
+    await deleteCategory(String(req.params.id));
     return res.json({ message: "Category deleted successfully" });
   } catch {
     return res.status(500).json({ error: "Failed to delete category" });
