@@ -63,17 +63,22 @@ export async function deleteCategory(id: string): Promise<void> {
 
 // ── Bookings ─────────────────────────────────────────────
 
-export async function getBookings(): Promise<Booking[]> {
-  const { data, error } = await supabase
+export async function getBookings(userId?: string): Promise<Booking[]> {
+  const query = supabase
     .from("bookings")
     .select("*")
     .order("created_at", { ascending: false });
+
+  const { data, error } = userId
+    ? await query.eq("user_id", userId)
+    : await query;
+
   if (error) throw new Error(error.message);
   return data.map(rowToBooking);
 }
 
 export async function saveBooking(booking: Booking): Promise<Booking> {
-  const { error } = await supabase.from("bookings").insert({
+  const insertPayload: Record<string, unknown> = {
     id: booking.id,
     full_name: booking.fullName,
     phone: booking.phone,
@@ -84,7 +89,13 @@ export async function saveBooking(booking: Booking): Promise<Booking> {
     status: booking.status,
     created_at: booking.createdAt,
     updated_at: booking.updatedAt,
-  });
+  };
+
+  if (booking.userId) {
+    insertPayload.user_id = booking.userId;
+  }
+
+  const { error } = await supabase.from("bookings").insert(insertPayload);
   if (error) throw new Error(error.message);
   return booking;
 }

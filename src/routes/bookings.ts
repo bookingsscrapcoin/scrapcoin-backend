@@ -3,6 +3,7 @@ import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireAdmin } from "../middleware/requireAdmin.js";
+import { supabase } from "../lib/supabase.js";
 import {
   getBookingById,
   getBookings,
@@ -51,6 +52,17 @@ bookingsRouter.post("/", bookingLimiter, async (req, res) => {
       details: parsed.error.flatten(),
     });
   }
+
+  let userId: string | undefined;
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
+    if (!authError && userData.user) {
+      userId = userData.user.id;
+    }
+  }
+
   const now = new Date().toISOString();
   try {
     const booking = await saveBooking({
@@ -59,6 +71,7 @@ bookingsRouter.post("/", bookingLimiter, async (req, res) => {
       status: "scheduled",
       createdAt: now,
       updatedAt: now,
+      userId,
     });
     return res.status(201).json({
       message: "Pickup scheduled. WhatsApp confirmation will follow shortly.",
@@ -66,6 +79,28 @@ bookingsRouter.post("/", bookingLimiter, async (req, res) => {
     });
   } catch {
     return res.status(500).json({ error: "Failed to save booking" });
+  }
+});
+
+// GET /api/bookings/me — list bookings for the current authenticated user
+bookingsRouter.get("/me", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing or invalid Authorization header" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  const { data: userData, error: authError } = await supabase.auth.getUser(token);
+
+  if (authError || !userData.user) {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+
+  try {
+    const bookings = await getBookings(userData.user.id);
+    return res.json(bookings);
+  } catch {
+    return res.status(500).json({ error: "Failed to fetch bookings" });
   }
 });
 

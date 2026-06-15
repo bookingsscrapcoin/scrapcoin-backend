@@ -18,6 +18,7 @@ export type Booking = {
   status: BookingStatus;
   createdAt: string;
   updatedAt: string;
+  userId?: string;
 };
 
 export type LivePickupItem = {
