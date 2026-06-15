@@ -1,3 +1,4 @@
+import rateLimit from "express-rate-limit";
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -8,6 +9,13 @@ import {
   saveBooking,
   updateBookingStatus,
 } from "../db/store.js";
+
+const bookingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const bookingSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
@@ -34,8 +42,8 @@ bookingsRouter.get("/", requireAdmin, async (_req, res) => {
   }
 });
 
-// POST /api/bookings � create a new booking (public)
-bookingsRouter.post("/", async (req, res) => {
+// POST /api/bookings — create a new booking (public)
+bookingsRouter.post("/", bookingLimiter, async (req, res) => {
   const parsed = bookingSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
