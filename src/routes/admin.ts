@@ -26,7 +26,7 @@ adminRouter.get("/users", async (_req, res) => {
 // PATCH /api/admin/users/:id — update user role
 adminRouter.patch("/users/:id", async (req, res) => {
   const parsed = z
-    .object({ role: z.enum(["admin", "user"]) })
+    .object({ role: z.enum(["admin", "champion", "user"]) })
     .safeParse(req.body);
 
   if (!parsed.success) {
