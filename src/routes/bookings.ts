@@ -60,29 +60,8 @@ bookingsRouter.post("/", bookingLimiter, async (req, res) => {
     const { data: userData, error: authError } = await supabase.auth.getUser(token);
     if (!authError && userData.user) {
       userId = userData.user.id;
-    }
-  }
-
-  // Fallback: if getUser failed, try to decode the JWT locally to extract the
-  // `sub` claim (user id). This helps when the auth server call intermittently
-  // fails or when verification via getUser isn't available in the runtime.
-  if (!userId) {
-    try {
-      const token = authHeader?.startsWith("Bearer ")
-        ? authHeader.split(" ")[1]
-        : undefined;
-      if (token) {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-          if (payload && payload.sub) {
-            userId = payload.sub;
-            console.warn('Fallback: extracted user id from JWT payload', userId);
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Failed to extract user id from JWT fallback', e);
+    } else if (authError) {
+      console.warn("Failed to verify Supabase Auth token:", authError.message);
     }
   }
 
