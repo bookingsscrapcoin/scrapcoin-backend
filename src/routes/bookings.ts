@@ -73,8 +73,6 @@ bookingsRouter.post("/", bookingLimiter, async (req, res) => {
     }
   }
 
-  console.log('Booking request userId:', userId ?? 'no-user');
-
   const now = new Date().toISOString();
   try {
     const booking = await saveBooking({
